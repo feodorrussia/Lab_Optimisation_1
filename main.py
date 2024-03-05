@@ -1,5 +1,6 @@
 from Extreme_points_iterating import corner_dots_method
 from Problem_preprocessing import *
+from Lin_prog_solve_converter import get_direct_solve
 
 # M = 5 | N_0 = 5
 matrix_A = np.array([[2, 1, 4, 2, 5],
