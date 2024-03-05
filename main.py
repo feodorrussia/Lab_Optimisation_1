@@ -2,12 +2,12 @@ from Extreme_points_iterating import corner_dots_method
 from Problem_preprocessing import *
 
 # M = 5 | N_0 = 5
-matrix_A = np.array([[6, 2, 4, 3, 15],
-                     [12, 10, 19, 8, 17],
-                     [2, 11, 14, 1, 14],
-                     [4, 7, 7, 12, 10],
-                     [15, 23, 17, 32]])  # A[M, N]
-vector_b = np.array([19, 21, 21, 18, 8])  # b[M]
+matrix_A = np.array([[2, 1, 4, 2, 5],
+                     [3, 9, -2, 5, -5],
+                     [4, 12, 4, -1, 4],
+                     [2, -2, 2, 1, 4],
+                     [-1, 4, 2, 4, 4]])  # A[M, N]
+vector_b = np.array([23, 10, 40, 11, 13])  # b[M]
 sign_x = ["-", ">=", "-", ">=", ">="]  #
 sign_m = ["<=", ">=", "=", "=", "="]  #
 vector_c = np.array([3, 2, 4, 1, 5])  # c[N]
