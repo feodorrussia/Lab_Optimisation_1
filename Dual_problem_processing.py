@@ -1,6 +1,19 @@
 from Problem_preprocessing import *
 
 
+def dual_revert_sign(sign, is_vector_x=False):
+    if is_vector_x:
+        if sign == "=":
+            return "-"
+        return sign
+    else:
+        if sign == "-":
+            return "="
+        elif sign == ">=":
+            return "<="
+        return ">="
+
+
 def convert_DirectToDual(c, m, b, signs_x, signs_m, is_max: bool = True):
     """
     Function for converting direct initial problem to dual canon
@@ -22,20 +35,18 @@ def convert_DirectToDual(c, m, b, signs_x, signs_m, is_max: bool = True):
     vector_b = c.copy()
     vector_c = b.copy()
 
-    dual_indices_m = " ".join(signs_x).replace(">=", "<=").replace("<=", "=>").replace("-", "=").split(" ")
-    dual_indices_x = " ".join(signs_m).replace("=", "-").split(" ")
+    dual_signs_m = list(map(lambda x: dual_revert_sign(x, is_vector_x=False), signs_x))
+    dual_signs_x = list(map(lambda x: dual_revert_sign(x, is_vector_x=True), signs_m))
 
-    matrix_A_prep, vector_b_prep, vector_c_prep, len_less, len_more, len_y_pos, N = preproc_make_canon(matrix_A,
-                                                                                                       vector_b,
-                                                                                                       dual_indices_x, dual_indices_m,
-                                                                                                       vector_c)
+    # matrix_A_prep, vector_b_prep, vector_c_prep, len_less, len_more, len_y_pos, N = preproc_make_canon(matrix_A,
+    #                                                                                                    vector_b,
+    #                                                                                                    dual_indices_x,
+    #                                                                                                    dual_indices_m,
+    #                                                                                                    vector_c)
+    #
+    # matrix_A_canon, vector_b_canon, y_canon, vector_c_canon = make_canon_form(matrix_A_prep, vector_b_prep,
+    #                                                                           vector_c_prep,
+    #                                                                           len_y_pos, len_less, len_more,
+    #                                                                           is_max=is_max, is_dual=True)
 
-    matrix_A_canon, vector_b_canon, y_canon, vector_c_canon = make_canon_form(matrix_A_prep, vector_b_prep,
-                                                                              vector_c_prep,
-                                                                              len_y_pos, len_less, len_more,
-                                                                              is_max=is_max, is_dual=True)
-    return {"param_y_name": y_canon,
-            "param_y": np.array([None] * len(y_canon)),  # x[M] (>= 0; N != 5 - CANONISATION !!!)
-            "vector_c": vector_c_canon,  # c[N]
-            "matrix_A": matrix_A_canon,  # A[M,N]
-            "vector_b": vector_b_canon}  # b[M]
+    return matrix_A, vector_b, dual_signs_x, dual_signs_m, vector_c

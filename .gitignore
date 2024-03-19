@@ -5,6 +5,9 @@
 
 .idea
 test.py
+venv
+*.xml
+*.iml
 
 # User-specific files
 *.rsuser

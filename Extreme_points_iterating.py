@@ -23,7 +23,7 @@ def get_aux(Matrix):
         yield A_aux, item
 
 
-def corner_dots_method(c_vector, b_vector, Matrix, c0):
+def corner_dots_method(c_vector, b_vector, Matrix, c0=0):
     """
     Метод крайних точек
     Каждая из подматриц решается методом Жордано-Гаусса
@@ -33,7 +33,7 @@ def corner_dots_method(c_vector, b_vector, Matrix, c0):
     Если массив пуст, то допустимого решения не существует
     """
     generator = get_aux(Matrix)
-    solution_list = []
+    solutions = {}
     for A_aux, item in generator:
         try:
             tmp_basis = np.arange(A_aux.shape[1])
@@ -47,20 +47,26 @@ def corner_dots_method(c_vector, b_vector, Matrix, c0):
             )
 
             # проверка
-            # print(len(b_vector_1) == len([val for val in b_vector_1 if val >= 0]))
-            if len(b_vector_1) == len([val for val in b_vector_1 if val >= 0]):
+            if all([val >= 0 for val in b_vector_1]):
                 result = 0
+                point = [0] * c_vector.shape[0]
                 for j in range(len(item)):
                     result += c_vector[item[tmp_basis[j]]] * b_vector_1[j]
+                    point[item[tmp_basis[j]]] = b_vector_1[j]
                 result -= c0
-                print(f'Индексы: {item} \nРезультат: {result}')
-                solution_list.append(result)
-        except Exception as e:
-            # print(e)
+
+                # print(f'Point: {point}\nFunc_result: {result}')
+                if result not in solutions.keys():
+                    solutions[result] = [point]
+                elif point not in solutions[result]:
+                    solutions[result].append(point)
+        except Exception:
+            continue
             pass
-    if len(solution_list) != 0:
-        print(solution_list)
-        print('\nРЕШЕНИЕ КРАЙНИМИ ТОЧКАМИ: ', min(solution_list))
-        return min(solution_list)
+    if len(solutions.keys()) != 0:
+        # print(solutions)
+        # print('\nExtreme point func result: ', min(solutions.keys()))
+        # print('\nPoints: ', solutions[min_result])
+        return min(solutions.keys()), solutions[min(solutions.keys())]
     else:
-        print('\nКРАЙНИЕ ТОЧКИ. У ЗАДАЧИ НЕ СУЩЕСТВУЕТ ДОПУСТИМОГО РЕШЕНИЯ\n')
+        print('\nExtreme point-log: Problem have no solution\n')

@@ -19,14 +19,14 @@ def gaussPivotFunc(matrix):
         pivot = nrow + np.argmax(abs(matrix[nrow:, nrow]))
         if pivot != nrow:
             # swap
-            # matrix[nrow], matrix[pivot] = matrix[pivot], matrix[nrow] - не работает.
-            # нужно переставлять строки именно так, как написано ниже
             matrix[[nrow, pivot]] = matrix[[pivot, nrow]]
         row = matrix[nrow]
         divider = row[nrow]  # диагональный элемент
         if abs(divider) < 1e-10:
             # почти нуль на диагонали. Продолжать не имеет смысла, результат счёта неустойчив
-            raise ValueError(f"Матрица несовместна. Максимальный элемент в столбце {nrow}: {divider:.3g}")
+            print(matrix)
+            print(f"Матрица несовместна. Максимальный элемент в столбце {nrow + 1}: {divider:.3g}")
+            return list
         # делим на диагональный элемент.
         row /= divider
         # теперь надо вычесть приведённую строку из всех нижележащих строчек

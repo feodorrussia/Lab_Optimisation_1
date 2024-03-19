@@ -1,4 +1,5 @@
 import numpy as np
+from tabulate import tabulate
 
 
 def find_indices(arr):
@@ -120,12 +121,8 @@ def preprocessing_(Input_Matrix, b, Equation_Less: int, Equation_More: int):
     )
 
     if out is not None:
-        Ind_Final = list(
-            Basis_Indexes[
-            Total_Restrictions
-            - (Equation_More + Equation_Less): Total_Restrictions
-            ]
-        ) + list(Basis_Indexes[0: M_General - (Equation_More + Equation_Less)])
+        Ind_Final = list(Basis_Indexes[Total_Restrictions - (Equation_More + Equation_Less): Total_Restrictions]) + \
+                    list(Basis_Indexes[0: M_General - (Equation_More + Equation_Less)])
 
         """Normalize"""
         for i in range(0, M_General, 1):
@@ -167,7 +164,7 @@ def preproc_make_canon(m, b, signs_x, signs_m, c):
         c_.append(c[index])
 
     for index in indices_x['<=']:
-        tmp[:, index] = [-tmp_ for tmp_ in tmp[:, index]]
+        tmp[:][index] = [-tmp_ for tmp_ in tmp[:][index]]
         c_.append(c[index])
 
     for index in indices_x['-']:
@@ -187,12 +184,10 @@ def preproc_make_canon(m, b, signs_x, signs_m, c):
 def make_canon_form(
         input_matrix,
         b,
-        c,
         x_positive: int,
         equation_less: int,
         equation_more: int,
         is_max: bool = False,
-        is_dual=False,
         perem: [int] = None,
 ):
     """
@@ -201,7 +196,6 @@ def make_canon_form(
        Then we are looking for other basis columns from left to right, trying to make them view like (1, 0, ... 0)
 
     :param is_dual:
-    :param c:
     :param input_matrix: входящая матрица (????equalities);
     :param b: входящий вектор правой части;
     :param is_max: максимизация(True) / минимизация(False);
@@ -215,9 +209,6 @@ def make_canon_form(
     N_General = input_matrix.shape[1]
     M_General = input_matrix.shape[0]
 
-    param_letter = "y" if is_dual else "x"
-    add_param_letter = "q" if is_dual else "z"
-
     # Определяем сколько нужно добавить переменных, для которых нет ограничения на знак.
     X_Any = N_General - x_positive
 
@@ -229,8 +220,7 @@ def make_canon_form(
 
     if perem is None:
         perem = [0] * N_General
-    perem_ = [f'{param_letter}{item}' for item in perem + np.zeros(X_Any + equation_less + equation_more).tolist()]
-    c_ = np.concatenate([c, np.zeros(X_Any + equation_less + equation_more)])
+    perem_ = [f'x{item}' for item in perem + np.zeros(X_Any + equation_less + equation_more).tolist()]
     """
     Вводим в итоговую матрицу столбцы связанные с переменными,
     которые имеют ограничения на знак.
@@ -277,14 +267,30 @@ def make_canon_form(
     if is_max:
         for i in range(0, equation_less + equation_more, 1):
             A[i, N_General + X_Any + i] = 1
-            perem_[N_General + X_Any + i] = f'{add_param_letter}{N_General + X_Any + i}'
+            perem_[N_General + X_Any + i] = f'z{N_General + X_Any + i}'
     else:
         for i in range(0, equation_less + equation_more, 1):
             A[i, N_General + X_Any + i] = -1
-            perem_[N_General + X_Any + i] = f'{add_param_letter}{N_General + X_Any + i}'
+            perem_[N_General + X_Any + i] = f'z{N_General + X_Any + i}'
 
     # print(f'4) Добавили переменные в строчки с неравенствами:\n{A}')
-    return A, b, perem_, c_
+    return A, b, perem_
+
+
+def canonisation(matrix_A, vector_b, sign_x, sign_m, vector_c, is_max=False):
+    Matrix, b, c, Less, More, positive_x, perem_index = preproc_make_canon(matrix_A, vector_b, sign_x, sign_m, vector_c)
+    Matrix, b, perem_index_1 = make_canon_form(Matrix, b, positive_x, Less, More, perem=perem_index, is_max=is_max)
+    Matrix, b, Ind2 = preprocessing_(Matrix, b, Less, More)
+    c2, c_free2 = update_c(Matrix, b, c, Ind2, Less, More, matrix_A.shape[1] - positive_x)
+
+    # structure for direct problem formalisation
+    return {f"param_name": perem_index_1,
+            f"param": np.array([None] * len(perem_index_1)),
+            "vector_c": c2,  # c[N]
+            "matrix_A": Matrix,  # A[M,N]
+            "vector_b": b,  # b[M]
+            "shift_c0": 0,
+            "sign_m": ["="] * c2.shape[0]}
 
 
 def update_c_without_preproc(c, Equation_Less, Equation_More, X_Any):
@@ -304,13 +310,24 @@ def update_c_without_preproc(c, Equation_Less, Equation_More, X_Any):
     return np.array(c_reshaped)
 
 
-def update_c(M, b, c, c_free, Basis_Indexes, Equation_Less, Equation_More, X_Any):
+def update_c(M, b, c, Basis_Indexes, Equation_Less, Equation_More, X_Any):
     c_reshaped = update_c_without_preproc(c, Equation_Less, Equation_More, X_Any)
+    c_free = 0
 
     """представление вектора с через небазисные компоненты (обнуление базисных компонент)"""
     for i in range(M.shape[0]):
         """в знаменателе обязана быть 1"""
         coef = c_reshaped[Basis_Indexes[i]] / M[i, Basis_Indexes[i]]
         c_reshaped[:] = c_reshaped[:] - coef * M[i][:]
-        c_free = c_free - coef * b[i]
+        c_free -= coef * b[i]
     return c_reshaped, c_free
+
+
+def print_system(A, b, sign, goal_func, idx):
+    info = []
+    for i in range(len(A)):
+        info.append([i] + A[i] + [sign[i], b[i]])
+
+    print(tabulate(info, headers=['\\'] + [str(i) for i in range(len(A[0]))] + ["|", "B"]))
+    print('Целевая функция: ', goal_func)
+    print('Ограничения на знак: ', idx)
